@@ -1,6 +1,5 @@
 import {BrowserRouter as Router, Redirect, Route, Switch} from "react-router-dom";
 import {LiveEventDashboard} from "./live-event-dashboard";
-import React from "react";
 import {LiveEventCreationPage} from "./live-event-creation-page";
 import {AppProvider} from "@shopify/polaris";
 import koTranslations from '@shopify/polaris/locales/ko.json'

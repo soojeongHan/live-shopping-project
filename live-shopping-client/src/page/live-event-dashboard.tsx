@@ -7,9 +7,20 @@ import {LiveEventCard} from "../component/live-event-card";
 import {FinishedEventCard} from "../component/finished-event-card";
 import {useHistory} from "react-router-dom";
 import {Product} from "../entities/product.entity";
+import httpClient from "../client/http-client";
 
 export function LiveEventDashboard() {
     const history = useHistory();
+    
+    const [data, setData] = useState();
+    useEffect(() => {
+        async function getLiveEventList() {
+            const data = await httpClient.getLiveEventList();
+            console.log('dashboard data:', data);
+            setData(() => data);
+        }
+        getLiveEventList();
+    }, []);
 
     const sampleScheduledEventCardProps: ScheduledEventCardProps = {
         event: {
@@ -93,6 +104,9 @@ export function LiveEventDashboard() {
         },
     }
 
+    /* REVIEW 1. window.location.href 2. history 객체를 통해서 push하는 2가지 형태를 사용하고있다.
+       왜 새로고침이 되는 방법을 사용하고 있을까?
+    */
     return (
         <Page title={'이벤트 대시보드'} fullWidth secondaryActions={[{
             content: '라이브 쇼핑 페이지로 이동', onAction: () => {

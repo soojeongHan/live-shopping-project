@@ -16,6 +16,7 @@ import {Product} from "../entities/product.entity";
 import {useHistory} from "react-router-dom";
 import httpClient from "../client/http-client";
 import { CreateLiveEventDto } from "../dto/create-live-event.dto";
+import { ProductsResponse } from "../response/product.response";
 
 export function LiveEventCreationPage(){
 
@@ -27,7 +28,7 @@ export function LiveEventCreationPage(){
         */
         async function getProduct() {
             try {
-                const { products } = await httpClient.getProduct();
+                const { products }: ProductsResponse = await httpClient.getProduct();
                 setProducts(() => products);
             }
             catch(e) {

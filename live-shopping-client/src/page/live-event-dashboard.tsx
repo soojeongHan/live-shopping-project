@@ -1,112 +1,89 @@
-import {AppProvider, Heading, Layout, Page, ResourceList, TextStyle, Thumbnail} from "@shopify/polaris";
+import {Heading, Layout, Page} from "@shopify/polaris";
 import {useEffect, useState} from "react";
-import {ScheduledEventCard} from "../component/scheduled-event-card";
+import { ScheduledEventCard } from '../component/scheduled-event-card';
 import {FinishedEventCardProps, LiveEventCardProps, ScheduledEventCardProps} from "../interface/event-card.props";
-import {LiveStatus} from "../entities/live-event.entity";
+import {LiveEvent, LiveStatus} from "../entities/live-event.entity";
 import {LiveEventCard} from "../component/live-event-card";
-import {FinishedEventCard} from "../component/finished-event-card";
+import { FinishedEventCard } from '../component/finished-event-card';
 import {useHistory} from "react-router-dom";
-import {Product} from "../entities/product.entity";
 import httpClient from "../client/http-client";
+import { LiveEventsResponse } from "../response/live-event.response";
+import { ProductsResponse } from "../response/product.response";
 
 export function LiveEventDashboard() {
     const history = useHistory();
-    
-    const [data, setData] = useState();
+
+    const [scheduledEventCards, setScheduledEventCards] = useState<ScheduledEventCardProps[]>();
+    const [liveEventCards, setLiveEventCards] = useState<LiveEventCardProps[]>();
+    const [finishedEventCards, setFinishedEventCards] = useState<FinishedEventCardProps[]>();
+
     useEffect(() => {
+        /* unmounted 변수는 cleanup을 위한 변수이다. 컴포넌트가 unmounted 됬을 때, true로 변화하며 상태 변화를 중지시킨다. */
+        let unmounted = false;
+        /* getLiveEventList 함수는 http api를 통해서 비동기적으로 서버로부터 Live Event List 데이터를 가져와,
+           setState를 통해 상태를 변화시킨다.
+        */
         async function getLiveEventList() {
-            const data = await httpClient.getLiveEventList();
-            console.log('dashboard data:', data);
-            setData(() => data);
+            try {
+                const { products } : ProductsResponse = await httpClient.getProduct();
+                const { liveEvents } : LiveEventsResponse = await httpClient.getLiveEventList();
+                
+                const scheduled: ScheduledEventCardProps[] = [];
+                const live: LiveEventCardProps[] = [];
+                const finished: FinishedEventCardProps[] = [];
+
+                liveEvents.forEach((liveEvent: LiveEvent) => {
+                    const event = { event: liveEvent };
+                    const product = {products: products.filter(product => liveEvent.productIds.includes(product.id))};
+                    let method;
+                    switch(liveEvent.status) {
+                        case LiveStatus.SCHEDULED:
+                            method = {onDeleteAction, onLiveEventAction}
+                            const scheduledEventCard: ScheduledEventCardProps = Object.assign(event, product, method);
+                            scheduled.push(scheduledEventCard);
+                            break;
+                        case LiveStatus.LIVE:
+                            method = {onDeleteAction, onFinishedEventAction}
+                            const liveEventCard: LiveEventCardProps = Object.assign(event, product, method);
+                            live.push(liveEventCard);
+                            break;
+                        case LiveStatus.FINISHED:
+                            method = {onDeleteAction}
+                            const finishedEventCard: FinishedEventCardProps = Object.assign(event, product, method);
+                            finished.push(finishedEventCard);
+                            break;
+                    }
+                })
+                if(!unmounted) {
+                    setScheduledEventCards(() => scheduled);
+                    setLiveEventCards(() => live);
+                    setFinishedEventCards(() => finished);
+                }
+            }
+            catch(e) {
+                console.log(e);
+            }
         }
         getLiveEventList();
-    }, []);
+        return () => { unmounted = true };
+    });
 
-    const sampleScheduledEventCardProps: ScheduledEventCardProps = {
-        event: {
-            id: '1',
-            title: '스카프 20% 할인 예정',
-            status: LiveStatus.SCHEDULED,
-            productIds: ['1', '2']
-        },
-        products: [
-            {
-                id: '1',
-                name: 'Black & orange scarf',
-                thumbnail: 'https://burst.shopifycdn.com/photos/black-orange-stripes_373x@2x.jpg',
-                price: 10000
-            },
-            {
-                id: '2',
-                name: 'Tucan scarf',
-                thumbnail: 'https://burst.shopifycdn.com/photos/tucan-scarf_373x@2x.jpg',
-                price: 20000
-            }
-        ],
-        onDeleteAction: () => {
-            alert('이벤트가 삭제되어야 합니다.')
-        },
-        onLiveEventAction: () => {
-            alert('방송 중인 이벤트로 이동되어야 합니다.')
-        }
+    const onDeleteAction = async (id: string) => {
+        const isSuccess = await httpClient.deleteLiveEvent(id);
+        if(isSuccess) history.go(0);
+        else throw new Error('fail Delete From Live Event Dashboard');
     }
-    const sampleLiveEventCardProps: LiveEventCardProps = {
-        event: {
-            id: '2',
-            title: '스카프 20% 할인 - 진행중',
-            status: LiveStatus.LIVE,
-            productIds: ['1', '2']
-        },
-        products: [
-            {
-                id: '1',
-                name: 'Black & orange scarf',
-                thumbnail: 'https://burst.shopifycdn.com/photos/black-orange-stripes_373x@2x.jpg',
-                price: 10000
-            },
-            {
-                id: '2',
-                name: 'Tucan scarf',
-                thumbnail: 'https://burst.shopifycdn.com/photos/tucan-scarf_373x@2x.jpg',
-                price: 20000
-            }
-        ],
-        onDeleteAction: () => {
-            alert('이벤트가 삭제되어야 합니다.')
-        },
-        onFinishedEventAction: () => {
-            alert('방송 종료된 이벤트로 이동되어야 합니다.')
-        },
+    const onLiveEventAction = async (id: string) => {
+        const isSuccess = await httpClient.updateLiveEvent(id, { status : LiveStatus.LIVE });
+        if(isSuccess) history.go(0);
+        else throw new Error('fail Live From Live Event Dashboard');
     }
-    const sampleFinishedEventCardProps: FinishedEventCardProps = {
-        event: {
-            id: '3',
-            title: '스카프 20% 할인 - 진행중',
-            status: LiveStatus.FINISHED,
-            productIds: ['1', '2']
-        },
-        products: [
-            {
-                id: '1',
-                name: 'Black & orange scarf',
-                thumbnail: 'https://burst.shopifycdn.com/photos/black-orange-stripes_373x@2x.jpg',
-                price: 10000
-            },
-            {
-                id: '2',
-                name: 'Tucan scarf',
-                thumbnail: 'https://burst.shopifycdn.com/photos/tucan-scarf_373x@2x.jpg',
-                price: 20000
-            }
-        ],
-        onDeleteAction: () => {
-            alert('이벤트가 삭제되어야 합니다.')
-        },
+    const onFinishedEventAction = async (id: string) => {
+        const isSuccess = await httpClient.updateLiveEvent(id, { status : LiveStatus.FINISHED });
+        if(isSuccess) history.go(0);
+        else throw new Error('fail Finished From Live Event Dashboard');
     }
 
-    /* REVIEW 1. window.location.href 2. history 객체를 통해서 push하는 2가지 형태를 사용하고있다.
-       왜 새로고침이 되는 방법을 사용하고 있을까?
-    */
     return (
         <Page title={'이벤트 대시보드'} fullWidth secondaryActions={[{
             content: '라이브 쇼핑 페이지로 이동', onAction: () => {
@@ -120,26 +97,35 @@ export function LiveEventDashboard() {
             <Layout>
                 <Layout.Section oneThird>
                     <Heading>방송 대기중인 이벤트</Heading>
-                    <ScheduledEventCard event={sampleScheduledEventCardProps.event}
-                                        products={sampleScheduledEventCardProps.products}
-                                        onDeleteAction={sampleScheduledEventCardProps.onDeleteAction}
-                                        onLiveEventAction={sampleScheduledEventCardProps.onLiveEventAction}
-                    />
+                    {scheduledEventCards?.map((scheduledEventCard: ScheduledEventCardProps) => 
+                        <ScheduledEventCard key={scheduledEventCard.event.id} 
+                                        event={scheduledEventCard.event}
+                                        products={scheduledEventCard.products}
+                                        onDeleteAction={scheduledEventCard.onDeleteAction}
+                                        onLiveEventAction={scheduledEventCard.onLiveEventAction}
+                        />
+                    )}
                 </Layout.Section>
                 <Layout.Section oneThird>
                     <Heading>방송 중인 이벤트</Heading>
-                    <LiveEventCard event={sampleLiveEventCardProps.event}
-                                   products={sampleLiveEventCardProps.products}
-                                   onDeleteAction={sampleLiveEventCardProps.onDeleteAction}
-                                   onFinishedEventAction={sampleLiveEventCardProps.onFinishedEventAction}
-                    />
+                    {liveEventCards?.map((liveEventCard: LiveEventCardProps) => 
+                        <LiveEventCard key={liveEventCard.event.id}
+                                        event={liveEventCard.event}
+                                        products={liveEventCard.products}
+                                        onDeleteAction={liveEventCard.onDeleteAction}
+                                        onFinishedEventAction={liveEventCard.onFinishedEventAction}
+                        />
+                    )}
                 </Layout.Section>
                 <Layout.Section oneThird>
                     <Heading>방송 종료된 이벤트</Heading>
-                    <FinishedEventCard event={sampleFinishedEventCardProps.event}
-                                       products={sampleFinishedEventCardProps.products}
-                                       onDeleteAction={sampleFinishedEventCardProps.onDeleteAction}
-                    />
+                    {finishedEventCards?.map((finishedEventCard: FinishedEventCardProps) => 
+                        <FinishedEventCard key={finishedEventCard.event.id}
+                                        event={finishedEventCard.event}
+                                        products={finishedEventCard.products}
+                                        onDeleteAction={finishedEventCard.onDeleteAction}
+                        />
+                    )}
                 </Layout.Section>
             </Layout>
         </Page>

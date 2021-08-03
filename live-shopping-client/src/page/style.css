@@ -1,23 +1,27 @@
-html,body{
-    height: 100%;
+html,
+body {
+  margin: 0;
+  height: 100%;
 }
-
-#root{
-    height: 100%;
+#root {
+  height: 100%;
 }
-.shopping-page{
-    display: flex;
-    height: 100%;
+.shopping-page {
+  display: flex;
+  max-width: 100%;
+  height: 100vh;
 }
-.shopping-page .layout{
-    background-color: #000000;
-    flex-basis: 33%;
-    flex-shrink: 1;
-    height: 100%;
+.shopping-page .layout {
+  display: inherit;
+  justify-content: center;
+  background-color: #000000;
+  height: 100%;
+  width: 100%;
 }
-.shopping-page .layout .broadcast{
-    width: 100%;
-    height: 100%;
-    background-image: url('/src/page/live-shopping.png');
-    background-size: cover;
+.shopping-page .layout .broadcast {
+  padding: 0 auto;
+  width: 56.25vh;
+  height: 100vh;
+  background-image: url("/src/page/live-shopping.png");
+  background-size: cover;
 }

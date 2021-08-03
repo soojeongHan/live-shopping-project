@@ -1,9 +1,9 @@
 import { CreateLiveEventDto } from "../dto/create-live-event.dto";
+import { UpdateLiveEventDto } from "../dto/update-live-event.dto";
 
 let count = 0
 const baseUrl = 'http://localhost:5000'
 
-// TODO Error Handling 
 class HttpClient {
     constructor(){
         count++;
@@ -41,27 +41,27 @@ class HttpClient {
         })
         return status === 201;
     }
-    /* updateLiveEvent 함수는 CreateLiveEventDto type의 데이터와 string type의 id를 argument로 받아서,
+    /* updateLiveEvent 함수는 string type의 id와 LiveStatus enum의 liveStatus를 argument로 받아서,
        데이터를 전송하여 이벤트를 수정합니다.
     */
-    async updateLiveEvent(id: string, data: CreateLiveEventDto) {
-        const success = await fetch(baseUrl + `/live-event/${id}`, {
+    async updateLiveEvent(id: string, data: UpdateLiveEventDto) {
+        const { status } = await fetch(baseUrl + `/live-event/${id}`, {
             method: 'PATCH',
             body: JSON.stringify(data),
             headers:{
                 'Content-Type': 'application/json'
             }
         })
-        return success
+        return status === 200
     }
     /* addLiveEvent 함수는 string type의 id를 argument로 받아서,
        삭제 요청을 통해 이벤트를 삭제합니다.
     */
     async deleteLiveEvent(id: string) {
-        const success = await fetch(baseUrl + `/live-event/${id}`, {
+        const { status } = await fetch(baseUrl + `/live-event/${id}`, {
             method: 'DELETE'
         })
-        return success
+        return status === 200
     }
     /* getProduct 함수는 product 리스트를 가져와, 
        데이터를 반환합니다. 

@@ -15,3 +15,9 @@ export interface LiveEventCardProps extends EventCardProps {
 export interface FinishedEventCardProps extends EventCardProps {
 
 }
+
+export interface AllEventCard {
+    scheduled: ScheduledEventCardProps[],
+    live: LiveEventCardProps[],
+    finished: FinishedEventCardProps[],
+}

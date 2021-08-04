@@ -74,19 +74,37 @@ export function LiveEventDashboard() {
     }, [reRender]);
 
     const onDeleteAction = async (id: string) => {
-        const isSuccess = await httpClient.deleteLiveEvent(id);
-        setReRender((prev) => !prev);
-        if(isSuccess) console.log('delete Event Card');
+        try {
+            const isSuccess = await httpClient.deleteLiveEvent(id);
+            setReRender((prev) => !prev);
+            if(isSuccess) console.log('success Delete Event Card');
+            else throw new Error('fail Delete Event Card');
+        }
+        catch(e) {
+            console.log(e);
+        }
     }
     const onLiveEventAction = async (id: string) => {
-        const isSuccess = await httpClient.updateLiveEvent(id, { status : LiveStatus.LIVE });
-        setReRender((prev) => !prev);
-        if(isSuccess) console.log('change Live Event Card');
+        try {
+            const isSuccess = await httpClient.updateLiveEvent(id, { status : LiveStatus.LIVE });
+            setReRender((prev) => !prev);
+            if(isSuccess) console.log('success Change Live Event Card');
+            else throw new Error('fail Change Event Card');
+        }
+        catch(e) {
+            console.log(e);
+        }
     }
     const onFinishedEventAction = async (id: string) => {
-        const isSuccess = await httpClient.updateLiveEvent(id, { status : LiveStatus.FINISHED });
-        setReRender((prev) => !prev);
-        if(isSuccess) console.log('change Finished Event Card');
+        try {
+            const isSuccess = await httpClient.updateLiveEvent(id, { status : LiveStatus.FINISHED });
+            setReRender((prev) => !prev);
+            if(isSuccess) console.log('success Change Finished Event Card');
+            else throw new Error('fail Change Finished Event Card');
+        }
+        catch(e) {
+            console.log(e);
+        }
     }
 
     return (

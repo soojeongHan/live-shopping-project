@@ -17,6 +17,10 @@ export function LiveEventDashboard() {
     const [liveEventCards, setLiveEventCards] = useState<LiveEventCardProps[]>();
     const [finishedEventCards, setFinishedEventCards] = useState<FinishedEventCardProps[]>();
 
+    /* reRender 변수는 Event Card의 수정, 삭제 등의 변화가 일어날 경우, 컴포넌트를 리렌더링하기 위한 변수이다.
+       외부 라이브러리를 사용하지 않고, 매 번 상태를 찾아서 변화시키기보다는 데이터 최신화를 위해 컴포넌트를 리렌더링한다.
+    */
+    const [reRender, setReRender] = useState<boolean>(false);
     useEffect(() => {
         /* unmounted 변수는 cleanup을 위한 변수이다. 컴포넌트가 unmounted 됬을 때, true로 변화하며 상태 변화를 중지시킨다. */
         let unmounted = false;
@@ -28,31 +32,32 @@ export function LiveEventDashboard() {
                 const { products } : ProductsResponse = await httpClient.getProduct();
                 const { liveEvents } : LiveEventsResponse = await httpClient.getLiveEventList();
                 
-                const scheduled: ScheduledEventCardProps[] = [];
-                const live: LiveEventCardProps[] = [];
-                const finished: FinishedEventCardProps[] = [];
-
-                liveEvents.forEach((liveEvent: LiveEvent) => {
+                const { scheduled, live, finished } = liveEvents.reduce((result: any, liveEvent: LiveEvent) => {
                     const event = { event: liveEvent };
                     const product = {products: products.filter(product => liveEvent.productIds.includes(product.id))};
                     let method;
                     switch(liveEvent.status) {
                         case LiveStatus.SCHEDULED:
-                            method = {onDeleteAction, onLiveEventAction}
+                            method = {onDeleteAction, onLiveEventAction};
                             const scheduledEventCard: ScheduledEventCardProps = Object.assign(event, product, method);
-                            scheduled.push(scheduledEventCard);
+                            result.scheduled.push(scheduledEventCard);
                             break;
                         case LiveStatus.LIVE:
-                            method = {onDeleteAction, onFinishedEventAction}
+                            method = {onDeleteAction, onFinishedEventAction};
                             const liveEventCard: LiveEventCardProps = Object.assign(event, product, method);
-                            live.push(liveEventCard);
+                            result.live.push(liveEventCard);
                             break;
                         case LiveStatus.FINISHED:
-                            method = {onDeleteAction}
+                            method = {onDeleteAction};
                             const finishedEventCard: FinishedEventCardProps = Object.assign(event, product, method);
-                            finished.push(finishedEventCard);
+                            result.finished.push(finishedEventCard);
                             break;
                     }
+                    return result;
+                }, {
+                    scheduled: [],
+                    live: [],
+                    finished: [],
                 })
                 if(!unmounted) {
                     setScheduledEventCards(() => scheduled);
@@ -66,22 +71,22 @@ export function LiveEventDashboard() {
         }
         getLiveEventList();
         return () => { unmounted = true };
-    });
+    }, [reRender]);
 
     const onDeleteAction = async (id: string) => {
         const isSuccess = await httpClient.deleteLiveEvent(id);
-        if(isSuccess) history.go(0);
-        else throw new Error('fail Delete From Live Event Dashboard');
+        setReRender((prev) => !prev);
+        if(isSuccess) console.log('delete Event Card');
     }
     const onLiveEventAction = async (id: string) => {
         const isSuccess = await httpClient.updateLiveEvent(id, { status : LiveStatus.LIVE });
-        if(isSuccess) history.go(0);
-        else throw new Error('fail Live From Live Event Dashboard');
+        setReRender((prev) => !prev);
+        if(isSuccess) console.log('change Live Event Card');
     }
     const onFinishedEventAction = async (id: string) => {
         const isSuccess = await httpClient.updateLiveEvent(id, { status : LiveStatus.FINISHED });
-        if(isSuccess) history.go(0);
-        else throw new Error('fail Finished From Live Event Dashboard');
+        setReRender((prev) => !prev);
+        if(isSuccess) console.log('change Finished Event Card');
     }
 
     return (
